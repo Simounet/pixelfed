@@ -430,30 +430,30 @@ class PublicApiController extends Controller
         $only_media = $request->only_media ?? false;
         $user = Auth::user();
         $account = Profile::findOrFail($id);
-        $statuses = $account->statuses()->getQuery()->whereNull('uri'); 
+        $statusesQueryBuilder = $account->statuses()->getQuery()->whereNull('uri');
         if($only_media == true) {
-            $statuses = $statuses
+            $statuses = $statusesQueryBuilder
                 ->whereHas('media')
                 ->whereNull('in_reply_to_id')
                 ->whereNull('reblog_of_id');
         }
-        if($id == $account->id && !$max_id && !$min_id && !$since_id) {
-            $statuses = $statuses->orderBy('id', 'desc')
+        if(is_object($user) && $id == $user->id && !$max_id && !$min_id && !$since_id) {
+            $statuses = $statusesQueryBuilder->orderBy('id', 'desc')
                 ->paginate($limit);
         } else if($since_id) {
-            $statuses = $statuses->where('id', '>', $since_id)
+            $statuses = $statusesQueryBuilder->where('id', '>', $since_id)
                 ->orderBy('id', 'DESC')
                 ->paginate($limit);
         } else if($min_id) {
-            $statuses = $statuses->where('id', '>', $min_id)
+            $statuses = $statusesQueryBuilder->where('id', '>', $min_id)
                 ->orderBy('id', 'ASC')
                 ->paginate($limit);
         } else if($max_id) {
-            $statuses = $statuses->where('id', '<', $max_id)
+            $statuses = $statusesQueryBuilder->where('id', '<', $max_id)
                 ->orderBy('id', 'DESC')
                 ->paginate($limit);
         } else {
-            $statuses = $statuses->whereVisibility('public')->orderBy('id', 'desc')->paginate($limit);
+            $statuses = $statusesQueryBuilder->whereVisibility('public')->orderBy('id', 'desc')->paginate($limit);
         }
         $resource = new Fractal\Resource\Collection($statuses, new StatusTransformer());
         $res = $this->fractal->createData($resource)->toArray();
